@@ -1,43 +1,33 @@
-const express = require('express');
-const cors = require('cors');
-const axios = require('axios');
-const app = express();
+// Esta es la dirección de tu "cocina" en Render que ya está funcionando
+const API_URL = "https://lexitest-plus.onrender.com/chat";
 
-app.use(cors());
-app.use(express.json());
+async function enviarMensaje() {
+    const input = document.getElementById('user-input'); // Asegúrate que el ID sea el de tu web
+    const mensaje = input.value;
 
-// ⚠️ NOTA DE SEGURIDAD: En el futuro, es mejor no poner la API key directamente en el código, pero para esta prueba nos sirve.
-const GEMINI_KEY = "AIzaSyCod7qKXcefhTqa4OEVWbl32dygU9G10Aw"; 
-
-// ¡Cambiado a /chat para que coincida con tu web!
-app.post('/chat', async (req, res) => {
-    const { mensaje, contexto } = req.body;
+    if (!mensaje) return;
 
     try {
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_KEY}`;
-        
-        // Formato correcto de Axios
-        const response = await axios.post(url, {
-            contents: [{ 
-                parts: [{ 
-                    text: `Contexto: ${contexto || 'Sin contexto'}\n\nPregunta: ${mensaje}` 
-                }] 
-            }]
-        }, {
-            headers: { 'Content-Type': 'application/json' }
+        const response = await fetch(API_URL, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                mensaje: mensaje,
+                contexto: "Eres un asistente de inteligencia artificial avanzado."
+            })
         });
+
+        const data = await response.json();
         
-        // Axios guarda la respuesta dentro de .data
-        res.json(response.data); 
+        // Aquí es donde la IA te responde en la pantalla
+        console.log("Respuesta de la IA:", data);
+        // Lógica para mostrar el mensaje en tu chat de Matrix...
 
-    } catch (err) {
-        console.error("Error en el servidor:", err.message);
-        res.status(500).json({ error: "Error de conexión con el núcleo IA" });
+    } catch (error) {
+        console.error("Error al conectar con el servidor:", error);
+        alert("ERROR DE CONEXIÓN. El servidor no responde.");
     }
-});
-
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-    console.log(`Servidor de operaciones activo en puerto ${PORT}`);
-});
+}
 
