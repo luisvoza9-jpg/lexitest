@@ -6,36 +6,38 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+// ⚠️ NOTA DE SEGURIDAD: En el futuro, es mejor no poner la API key directamente en el código, pero para esta prueba nos sirve.
 const GEMINI_KEY = "AIzaSyCod7qKXcefhTqa4OEVWbl32dygU9G10Aw"; 
 
-app.post('/api/consultar', async (req, res) => {
+// ¡Cambiado a /chat para que coincida con tu web!
+app.post('/chat', async (req, res) => {
     const { mensaje, contexto } = req.body;
 
     try {
         const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_KEY}`;
         
-        const response = await axios(url, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                contents: [{ 
-                    parts: [{ 
-                        text: `Contexto: ${contexto}\n\nPregunta: ${mensaje}` 
-                    }] 
-                }]
-            })
+        // Formato correcto de Axios
+        const response = await axios.post(url, {
+            contents: [{ 
+                parts: [{ 
+                    text: `Contexto: ${contexto || 'Sin contexto'}\n\nPregunta: ${mensaje}` 
+                }] 
+            }]
+        }, {
+            headers: { 'Content-Type': 'application/json' }
         });
         
-        const data = await response.json();
-        res.json(data); 
+        // Axios guarda la respuesta dentro de .data
+        res.json(response.data); 
 
     } catch (err) {
-        res.status(500).json({ error: "Error" });
+        console.error("Error en el servidor:", err.message);
+        res.status(500).json({ error: "Error de conexión con el núcleo IA" });
     }
 });
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-    console.log(`Servidor en puerto ${PORT}`);
+    console.log(`Servidor de operaciones activo en puerto ${PORT}`);
 });
 
