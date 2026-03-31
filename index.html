@@ -17,7 +17,7 @@
         /* Matrix Background */
         #canvas { position: fixed; inset: 0; z-index: 0; opacity: 0.15; pointer-events: none; }
 
-        /* Auth Wall */
+        /* Auth Wall con borde animado */
         #authWall { position: fixed; inset: 0; z-index: 9999; display: flex; align-items: center; justify-content: center; background: radial-gradient(circle at center, #0a1a10 0%, #050508 100%); transition: 0.5s; }
         .auth-card { position: relative; width: 90%; max-width: 400px; padding: 50px 30px; background: var(--pnl); border-radius: 24px; border: 1px solid rgba(0,255,149,0.1); text-align: center; backdrop-filter: blur(25px); box-shadow: 0 0 50px rgba(0,0,0,1); }
         .auth-card::before { content: ""; position: absolute; inset: -2px; border-radius: 26px; background: conic-gradient(from 0deg, transparent, transparent, var(--s)); animation: rotate 4s linear infinite; z-index: -1; }
@@ -44,7 +44,6 @@
         .user { align-self: flex-end; background: rgba(255,255,255,0.05); border-right: 3px solid var(--s); text-align: right; color: var(--s); }
 
         .credits-display { color: var(--gold); border: 1px solid var(--gold); padding: 6px 15px; border-radius: 20px; font-size: 0.75rem; cursor: pointer; font-weight: 900; transition: 0.3s; box-shadow: 0 0 10px rgba(255, 204, 0, 0.1); }
-        .credits-display:hover { background: rgba(255, 204, 0, 0.1); }
 
         .input-area { padding: 20px; background: #08080a; display: flex; gap: 12px; border-top: 1px solid var(--brd); align-items: center; }
         .btn-action { background: none; border: 1px solid var(--s); color: var(--s); padding: 12px 20px; border-radius: 12px; cursor: pointer; font-weight: 900; transition: 0.3s; font-family: 'Orbitron'; font-size: 0.7rem; }
@@ -112,7 +111,7 @@
     window.onresize = initMatrix;
     initMatrix(); setInterval(drawMatrix, 60);
 
-    // --- SUPABASE ENGINE ---
+    // --- CONFIGURACIÓN SUPABASE (ESTOCOLMO) ---
     const SB_URL = "https://fjueiqeazwwlpdsnqwkp.supabase.co";
     const SB_KEY = "sb_publishable_UMSVIg-LVnpYHto5o3cm7g_UuVSJAHA";
     const supabaseClient = supabase.createClient(SB_URL, SB_KEY);
@@ -126,11 +125,18 @@
         document.getElementById('authStatus').innerText = "CONECTANDO CON EL NÚCLEO...";
         
         try {
-            let { data, error } = await supabaseClient.from('users').select('*').eq('phone', tel).single();
+            // Buscamos al usuario en la tabla 'users'
+            let { data, error } = await supabaseClient.from('users').select('*').eq('phone', tel).maybeSingle();
             
             if (!data) {
-                // Registro inicial (1 crédito de regalo)
-                const { data: newUser } = await supabaseClient.from('users').insert([{ phone: tel, credits: 1 }]).select().single();
+                // Si no existe, lo creamos con 1 crédito
+                const { data: newUser, error: insError } = await supabaseClient
+                    .from('users')
+                    .insert([{ phone: tel, credits: 1 }])
+                    .select()
+                    .single();
+                
+                if(insError) throw insError;
                 userActual = tel;
                 misCreditos = 1;
             } else {
@@ -138,6 +144,7 @@
                 misCreditos = data.credits;
             }
             
+            // Animación de entrada
             document.getElementById('authWall').style.opacity = '0';
             setTimeout(() => {
                 document.getElementById('authWall').style.display = 'none';
@@ -146,25 +153,27 @@
             }, 500);
 
         } catch(e) {
-            alert("Error de conexión con la base de datos.");
+            console.error(e);
+            alert("ERROR: No se pudo conectar con la base de datos.");
         }
     }
 
     function updateCreditsUI() {
         document.getElementById('puntosLabel').innerText = misCreditos;
+        const btn = document.getElementById('creditsBtn');
         if(misCreditos <= 0) {
-            document.getElementById('creditsBtn').style.borderColor = "var(--err)";
-            document.getElementById('creditsBtn').style.color = "var(--err)";
+            btn.style.borderColor = "var(--err)";
+            btn.style.color = "var(--err)";
         } else {
-            document.getElementById('creditsBtn').style.borderColor = "var(--gold)";
-            document.getElementById('creditsBtn').style.color = "var(--gold)";
+            btn.style.borderColor = "var(--gold)";
+            btn.style.color = "var(--gold)";
         }
     }
 
     async function query() {
         const q = document.getElementById('qIn').value;
         if(!q) return;
-        if(misCreditos <= 0) return alert("CRÉDITOS INSUFICIENTES. Por favor, recargue.");
+        if(misCreditos <= 0) return alert("CRÉDITOS INSUFICIENTES.");
         
         msg("user", q.toUpperCase());
         document.getElementById('qIn').value = "";
@@ -176,29 +185,24 @@
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({ 
-                    message: activeDoc ? `Contexto del documento: ${activeDoc.substring(0, 15000)}. Pregunta: ${q}` : q 
+                    message: activeDoc ? `Contexto: ${activeDoc.substring(0, 12000)}. Pregunta: ${q}` : q 
                 })
             });
             const d = await r.json();
             
-            // Borrar el mensaje de "procesando" y poner la respuesta
             tempAiMsg.remove();
-            msg("ai", ">> " + (d.response || d.text || "Sin respuesta del servidor."));
-            
-            // Opcional: Descontar crédito por pregunta
-            // descontarCredito(); 
+            msg("ai", ">> " + (d.response || "Error en respuesta."));
 
         } catch(e) {
             tempAiMsg.remove();
-            msg("ai", ">> <span style='color:var(--err)'>ERROR DE CONEXIÓN CON EL SERVIDOR.</span>");
+            msg("ai", ">> <span style='color:var(--err)'>ERROR DE CONEXIÓN.</span>");
         }
     }
 
     async function procesarPDF(file) {
-        if(!file) return;
-        if(misCreditos <= 0) return alert("NO TIENES CRÉDITOS PARA ANALIZAR DOCUMENTOS.");
+        if(!file || misCreditos <= 0) return alert("Sin créditos.");
         
-        msg("ai", `>> ANALIZANDO DOCUMENTO: <b>${file.name.toUpperCase()}</b>...`);
+        msg("ai", `>> ANALIZANDO: <b>${file.name.toUpperCase()}</b>...`);
         
         const reader = new FileReader();
         reader.onload = async (e) => {
@@ -215,11 +219,10 @@
                 }
                 activeDoc = t;
                 
-                // Gasto de crédito exitoso
                 await descontarCredito();
-                msg("ai", ">> SYNC COMPLETO. Crédito descontado. Puedes preguntar sobre el archivo.");
+                msg("ai", ">> SYNC COMPLETO. Crédito descontado.");
             } catch(err) {
-                msg("ai", ">> <span style='color:var(--err)'>ERROR: EL ARCHIVO NO SE PUDO PROCESAR.</span>");
+                msg("ai", ">> <span style='color:var(--err)'>ERROR AL LEER PDF.</span>");
             }
         };
         reader.readAsArrayBuffer(file);
@@ -238,7 +241,7 @@
         d.innerHTML = text;
         f.appendChild(d);
         f.scrollTop = f.scrollHeight;
-        return d; // Devolvemos el elemento por si queremos borrarlo (como el loading)
+        return d;
     }
 </script>
 </body>
