@@ -6,7 +6,7 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-const GEMINI_KEY = "AIzaSyCod7qKXcefhTqa4OEVWbl32dygU9G10Aw"; 
+const GEMINI_KEY = "AIzaSyBago1dHHGLG6Sbns4HsoDbeCo_i1fbMtQ"; 
 
 app.post('/chat', async (req, res) => {
     // Capturamos 'mensaje' y 'contexto' que vienen de tu index.html
