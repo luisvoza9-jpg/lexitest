@@ -1,25 +1,38 @@
-const express = require('express');
-const { GoogleGenerativeAI } = require('@google/generative-ai');
-const cors = require('cors');
-require('dotenv').config();
+const { onRequest } = require("firebase-functions/v2/https");
+const { GoogleGenerativeAI } = require("@google/generative-ai");
 
-const app = express();
-app.use(cors());
-app.use(express.json());
+exports.chat = onRequest({ secrets: ["GEMINI_API_KEY"] }, async (req, res) => {
+    res.set("Access-Control-Allow-Origin", "*");
+    res.set("Access-Control-Allow-Methods", "POST, OPTIONS");
+    res.set("Access-Control-Allow-Headers", "Content-Type");
+    if (req.method === "OPTIONS") { res.status(204).send(""); return; }
 
-const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY);
-
-app.post('/chat', async (req, res) => {
     try {
+        const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
         const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-        const result = await model.generateContent(req.body.prompt);
-        const response = await result.response;
-        res.json({ response: response.text() });
-    } catch (error) {
-        res.status(500).json({ error: error.message });
+
+        const mensajeUsuario = req.body.message;
+
+        // --- LÓGICA DE COMPORTAMIENTO ---
+        let promptFinal = "";
+
+        // Si el mensaje es muy largo (un PDF inyectado), entra en MODO ESTUDIO
+        if (mensajeUsuario.length > 500) { 
+            promptFinal = `Eres LEXITEST ELITE. Has recibido un documento extenso. 
+            Analízalo y genera: 1. Un RESUMEN y 2. PREGUNTAS DE EXAMEN. 
+            Aquí está el texto: ${mensajeUsuario}`;
+        } 
+        // Si el mensaje es corto, entra en MODO CHAT normal
+        else {
+            promptFinal = `Eres LEXITEST ELITE, una IA de terminal avanzada, con un toque cínico y profesional. 
+            Responde de forma breve y concisa al siguiente saludo o pregunta: ${mensajeUsuario}`;
+        }
+
+        const result = await model.generateContent(promptFinal);
+        res.json({ response: result.response.text() });
+
+    } catch (e) {
+        res.status(500).json({ response: "ERROR_SISTEMA: " + e.message });
     }
 });
-
-const PORT = process.env.PORT || 10000;
-app.listen(PORT, () => console.log(`Servidor en puerto ${PORT}`));
 
