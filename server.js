@@ -1,33 +1,38 @@
-// Esta es la dirección de tu "cocina" en Render que ya está funcionando
-const API_URL = "https://lexitest-plus.onrender.com/chat";
+const express = require('express');
+const cors = require('cors');
+const axios = require('axios');
+const app = express();
 
-async function enviarMensaje() {
-    const input = document.getElementById('user-input'); // Asegúrate que el ID sea el de tu web
-    const mensaje = input.value;
+app.use(cors());
+app.use(express.json());
 
-    if (!mensaje) return;
+const GEMINI_KEY = "AIzaSyCod7qKXcefhTqa4OEVWbl32dygU9G10Aw"; 
+
+app.post('/chat', async (req, res) => {
+    const { mensaje, contexto } = req.body;
 
     try {
-        const response = await fetch(API_URL, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                mensaje: mensaje,
-                contexto: "Eres un asistente de inteligencia artificial avanzado."
-            })
-        });
-
-        const data = await response.json();
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_KEY}`;
         
-        // Aquí es donde la IA te responde en la pantalla
-        console.log("Respuesta de la IA:", data);
-        // Lógica para mostrar el mensaje en tu chat de Matrix...
+        const response = await axios.post(url, {
+            contents: [{ 
+                parts: [{ 
+                    text: `Contexto: ${contexto || 'Asistente de seguridad'}\n\nPregunta: ${mensaje}` 
+                }] 
+            }]
+        });
+        
+        res.json(response.data); 
 
-    } catch (error) {
-        console.error("Error al conectar con el servidor:", error);
-        alert("ERROR DE CONEXIÓN. El servidor no responde.");
+    } catch (err) {
+        console.error("Error:", err.message);
+        res.status(500).json({ error: "Error en el servidor" });
     }
-}
+});
+
+// IMPORTANTE: Render necesita que el puerto sea dinámico
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+    console.log(`Servidor activo en puerto ${PORT}`);
+});
 
