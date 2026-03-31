@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -143,20 +142,18 @@
         const tempAiMsg = msg("ai", "<span class='loading-dots'>PROCESANDO</span>");
 
         try {
-            // URL CORRECTA DE RENDER
-            const r = await fetch("https://lexitest-plus.onrender.com/chat", {
+            // URL DE TU NUEVA FUNCIÓN DE FIREBASE
+            const r = await fetch("https://chat-663efcuufa-uc.a.run.app", {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({ 
-                    // CAMBIO: Ahora enviamos "message" (que es lo que el servidor espera)
-                    message: activeDoc ? `PDF INYECTADO: ${activeDoc.substring(0, 8000)}. Pregunta del usuario: ${q}` : q
+                    prompt: activeDoc ? `PDF INYECTADO: ${activeDoc.substring(0, 15000)}. Pregunta del usuario: ${q}` : q
                 })
             });
 
             const d = await r.json();
             if (tempAiMsg) tempAiMsg.remove();
 
-            // CAMBIO: El servidor ya responde con { response: "texto" }
             if (d.response) {
                 msg("ai", ">> " + d.response);
                 descontarCredito();
@@ -209,4 +206,3 @@
 </script>
 </body>
 </html>
-
