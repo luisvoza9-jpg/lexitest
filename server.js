@@ -6,27 +6,32 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// LA CLAVE: Aquí no hay llaves reales, solo esta frase
-const GEMINI_KEY = process.env.GEMINI_KEY; 
+// USAMOS EL NOMBRE QUE PUSIMOS EN RENDER
+const API_KEY = process.env.GOOGLE_API_KEY; 
 
 app.post('/chat', async (req, res) => {
     try {
-        const { mensaje } = req.body;
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_KEY}`;
+        // CAMBIO: Ahora recibe "message" (igual que el nuevo index.html)
+        const { message } = req.body;
+        
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}`;
         
         const response = await axios.post(url, {
-            contents: [{ parts: [{ text: mensaje }] }]
+            contents: [{ parts: [{ text: message }] }]
         });
 
+        // Extraemos el texto de la respuesta de Google
         const textoIA = response.data.candidates[0].content.parts[0].text;
-        res.json({ respuesta: textoIA });
+        
+        // CAMBIO: Respondemos con "response" (igual que el nuevo index.html)
+        res.json({ response: textoIA });
 
     } catch (err) {
-        // Si falla, los logs de Render nos dirán por qué
-        res.status(500).json({ error: "Error en la IA" });
+        console.error("ERROR EN IA:", err.response ? err.response.data : err.message);
+        res.status(500).json({ error: "Fallo en el núcleo de la IA" });
     }
 });
 
 const PORT = process.env.PORT || 10000;
-app.listen(PORT, () => { console.log("Servidor ONLINE"); });
+app.listen(PORT, () => { console.log("Servidor LEXITEST ONLINE"); });
 
