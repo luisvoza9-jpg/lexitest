@@ -1,9 +1,10 @@
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>LEXITEST ELITE | SUPABASE TERMINAL 🦾</title>
+    <title>LEXITEST ELITE | TERMINAL 🦾</title>
     
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
@@ -142,26 +143,31 @@
         const tempAiMsg = msg("ai", "<span class='loading-dots'>PROCESANDO</span>");
 
         try {
-            // AQUÍ ESTÁ EL CAMBIO DE URL A LEXITEST-PLUS
+            // URL CORRECTA DE RENDER
             const r = await fetch("https://lexitest-plus.onrender.com/chat", {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({ 
-                    mensaje: q,
-                    contexto: activeDoc ? `Analiza este PDF: ${activeDoc.substring(0, 10000)}` : "Eres un asistente de élite."
+                    // CAMBIO: Ahora enviamos "message" (que es lo que el servidor espera)
+                    message: activeDoc ? `PDF INYECTADO: ${activeDoc.substring(0, 8000)}. Pregunta del usuario: ${q}` : q
                 })
             });
-            const d = await r.json();
-            tempAiMsg.remove();
 
-            // Ajuste para leer la respuesta de Gemini correctamente
-            const respuestaFinal = d.candidates[0].content.parts[0].text;
-            msg("ai", ">> " + respuestaFinal);
+            const d = await r.json();
+            if (tempAiMsg) tempAiMsg.remove();
+
+            // CAMBIO: El servidor ya responde con { response: "texto" }
+            if (d.response) {
+                msg("ai", ">> " + d.response);
+                descontarCredito();
+            } else {
+                msg("ai", ">> <span style='color:var(--err)'>ERROR: RESPUESTA VACÍA DEL NÚCLEO.</span>");
+            }
             
-            descontarCredito();
         } catch(e) {
-            tempAiMsg.remove();
-            msg("ai", ">> <span style='color:var(--err)'>ERROR DE CONEXIÓN CON EL NÚCLEO.</span>");
+            if (tempAiMsg) tempAiMsg.remove();
+            msg("ai", ">> <span style='color:var(--err)'>ERROR DE CONEXIÓN CON EL SERVIDOR.</span>");
+            console.error(e);
         }
     }
 
@@ -180,7 +186,7 @@
                 t += c.items.map(it => it.str).join(" ") + " ";
             }
             activeDoc = t;
-            msg("ai", ">> PDF INYECTADO CORRECTAMENTE.");
+            msg("ai", ">> PDF INYECTADO CORRECTAMENTE AL CONTEXTO.");
         };
         reader.readAsArrayBuffer(file);
     }
