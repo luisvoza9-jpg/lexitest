@@ -1,28 +1,41 @@
+const express = require('express');
+const { GoogleGenerativeAI } = require('@google/generative-ai');
+const cors = require('cors');
+require('dotenv').config();
+
+const app = express();
+app.use(cors());
+app.use(express.json());
+
+// Configuramos la IA con tu llave de Render
+const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY);
+
 app.post('/chat', async (req, res) => {
     try {
-        // 1. Forzamos a que lea el mensaje sea cual sea el nombre
-        const userMsg = req.body.message || req.body.mensaje || req.body.q;
+        const { prompt } = req.body;
         
-        console.log("Intentando hablar con Google usando el mensaje:", userMsg);
+        // Usamos Gemini 1.5 Flash (el más rápido y con nivel gratuito)
+        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${process.env.GOOGLE_API_KEY}`;
+        const result = await model.generateContent(prompt);
+        const response = await result.response;
+        const text = response.text();
+
+        res.json({ response: text });
+
+    } catch (error) {
+        console.error("ERROR EN GOOGLE AI:", error);
         
-        const response = await axios.post(url, {
-            contents: [{ parts: [{ text: userMsg }] }]
+        // Si Google da error, esto te dirá por qué en el log de Render
+        res.status(500).json({ 
+            error: "Error en el servidor de IA", 
+            message: error.message 
         });
-
-        const textoIA = response.data.candidates[0].content.parts[0].text;
-        res.json({ response: textoIA });
-
-    } catch (err) {
-        // 2. ESTO ES LO QUE NECESITO QUE MIRES EN LOS LOGS
-        console.error("DETALLE DEL FALLO:");
-        if (err.response) {
-            console.error(JSON.stringify(err.response.data));
-        } else {
-            console.error(err.message);
-        }
-        res.status(500).json({ error: "Fallo en el núcleo" });
     }
+});
+
+const PORT = process.env.PORT || 10000;
+app.listen(PORT, () => {
+    console.log(`🚀 SERVIDOR LEXITEST ONLINE EN PUERTO ${PORT}`);
 });
 
