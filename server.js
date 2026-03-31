@@ -6,32 +6,27 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+// LA CLAVE: Aquí no hay llaves reales, solo esta frase
 const GEMINI_KEY = process.env.GEMINI_KEY; 
 
 app.post('/chat', async (req, res) => {
-    // Capturamos 'mensaje' y 'contexto' que vienen de tu index.html
-    const { mensaje, contexto } = req.body;
-
     try {
+        const { mensaje } = req.body;
         const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_KEY}`;
         
-        // Enviamos a Google con el formato exacto que pide
         const response = await axios.post(url, {
-            contents: [{
-                parts: [{ text: `${contexto || ""} \n\n Pregunta del usuario: ${mensaje}` }]
-            }]
+            contents: [{ parts: [{ text: mensaje }] }]
         });
-        
-        res.json(response.data); 
+
+        const textoIA = response.data.candidates[0].content.parts[0].text;
+        res.json({ respuesta: textoIA });
 
     } catch (err) {
-        console.error("Error en el servidor:", err.message);
-        res.status(500).json({ error: "Fallo al conectar con Gemini" });
+        // Si falla, los logs de Render nos dirán por qué
+        res.status(500).json({ error: "Error en la IA" });
     }
 });
 
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-    console.log(`Servidor activo y listo`);
-});
+const PORT = process.env.PORT || 10000;
+app.listen(PORT, () => { console.log("Servidor ONLINE"); });
 
