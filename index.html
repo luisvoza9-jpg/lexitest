@@ -142,12 +142,13 @@
         const tempAiMsg = msg("ai", "<span class='loading-dots'>PROCESANDO</span>");
 
         try {
-            // URL DE TU NUEVA FUNCIÓN DE FIREBASE
+            // USANDO TU URL DE CLOUD RUN
             const r = await fetch("https://chat-663efcuufa-uc.a.run.app", {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({ 
-                    prompt: activeDoc ? `PDF INYECTADO: ${activeDoc.substring(0, 15000)}. Pregunta del usuario: ${q}` : q
+                    // ENVIAMOS EL PROMPT CORRECTO AL INDEX.JS
+                    prompt: activeDoc ? `CONTEXTO PDF: ${activeDoc.substring(0, 5000)}. PREGUNTA: ${q}` : q
                 })
             });
 
@@ -158,19 +159,19 @@
                 msg("ai", ">> " + d.response);
                 descontarCredito();
             } else {
-                msg("ai", ">> <span style='color:var(--err)'>ERROR: RESPUESTA VACÍA DEL NÚCLEO.</span>");
+                msg("ai", ">> <span style='color:var(--err)'>ERROR: NÚCLEO NO RESPONDE. REVISE LOGS.</span>");
             }
             
         } catch(e) {
             if (tempAiMsg) tempAiMsg.remove();
-            msg("ai", ">> <span style='color:var(--err)'>ERROR DE CONEXIÓN CON EL SERVIDOR.</span>");
+            msg("ai", ">> <span style='color:var(--err)'>ERROR DE ENLACE CON EL SERVIDOR CLOUD.</span>");
             console.error(e);
         }
     }
 
     async function procesarPDF(file) {
         if(!file || misCreditos <= 0) return;
-        msg("ai", `>> ESCANEANDO PDF...`);
+        msg("ai", `>> ESCANEANDO VECTOR PDF...`);
         const reader = new FileReader();
         reader.onload = async (e) => {
             const pdfjsLib = window['pdfjs-dist/build/pdf'];
@@ -183,15 +184,17 @@
                 t += c.items.map(it => it.str).join(" ") + " ";
             }
             activeDoc = t;
-            msg("ai", ">> PDF INYECTADO CORRECTAMENTE AL CONTEXTO.");
+            msg("ai", ">> PDF INYECTADO AL CONTEXTO DE IA.");
         };
         reader.readAsArrayBuffer(file);
     }
 
     async function descontarCredito() {
-        misCreditos--;
-        updateCreditsUI();
-        await supabaseClient.from('users').update({ credits: misCreditos }).eq('phone', userActual);
+        if (misCreditos > 0) {
+            misCreditos--;
+            updateCreditsUI();
+            await supabaseClient.from('users').update({ credits: misCreditos }).eq('phone', userActual);
+        }
     }
 
     function msg(type, text) {
@@ -206,3 +209,5 @@
 </script>
 </body>
 </html>
+
+
