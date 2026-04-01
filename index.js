@@ -7,25 +7,20 @@ exports.chat = onRequest({
     region: "us-central1" 
 }, async (req, res) => {
     try {
-        // Inicializamos la IA con la clave de Firebase Secrets
         const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
         
-        // AQUÍ ESTÁ EL CAMBIO: Usamos "gemini-pro" que es el que funciona con tu versión
-        const model = genAI.getGenerativeModel({ model: "gemini-pro" });
+        // Usamos el modelo moderno garantizado
+        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
-        // Pillamos lo que envías desde la web
         const prompt = req.body.prompt || "Hola";
         
-        // Generamos la respuesta
         const result = await model.generateContent(prompt);
-        const response = await result.response;
-        const text = response.text();
+        const text = result.response.text();
         
-        // Devolvemos la respuesta al HTML
         res.json({ response: text });
 
     } catch (error) {
-        console.error("ERROR EN SERVIDOR:", error);
+        console.error("ERROR REAL EN EL SERVIDOR:", error);
         res.status(500).json({ 
             error: "FALLO DE NÚCLEO", 
             detalle: error.message 
