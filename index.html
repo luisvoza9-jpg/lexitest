@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body { margin: 0; background: #000; overflow: hidden; }
+        canvas { display: block; position: fixed; top: 0; left: 0; z-index: -1; opacity: 0.5; }
+    </style>
+</head>
+<body>
+    <canvas id="m"></canvas>
+    <script>
+        const c = document.getElementById("m");
+        const ctx = c.getContext("2d");
+        c.height = window.innerHeight; c.width = window.innerWidth;
+        const txt = "0123456789ABCDEFGHIJKLMNOPQRSTUVXYZ";
+        const f = 16; const col = c.width/f;
+        const drops = Array(Math.floor(col)).fill(1);
+        function draw() {
+            ctx.fillStyle = "rgba(0,0,0,0.05)"; ctx.fillRect(0,0,c.width,c.height);
+            ctx.fillStyle = "#0F0"; ctx.font = f + "px monospace";
+            drops.forEach((y, i) => {
+                const s = txt[Math.floor(Math.random()*txt.length)];
+                ctx.fillText(s, i*f, y*f);
+                if(y*f > c.height && Math.random() > 0.975) drops[i] = 0;
+                drops[i]++;
+            });
+        }
+        setInterval(draw, 35);
+    </script>
+</body>
+</html>
+
+
+
+
+
+
