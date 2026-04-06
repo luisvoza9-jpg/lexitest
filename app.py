@@ -73,6 +73,9 @@ if files:
         st.warning("⚠️ ¡Oye! Tienes que marcar al menos una casilla a la izquierda para que sepa qué hacer.")
     else:
         if st.button("🚀 PROCESAR TODO AHORA"):
+            # Script de anuncio - se ejecuta al procesar
+            components.html('<script src="https://pl29076888.profitablecpmratenetwork.com/18/5f/e2/185fe26aa2269e038e099a0146cea80a.js"></script>', height=0)
+            
             resultados = []
             barra = st.progress(0)
             placeholder_texto = st.empty()
