@@ -69,12 +69,15 @@ st.info("💡 Puedes subir hasta 200 archivos a la vez. Selecciona las opciones 
 files = st.file_uploader("📂 Suelta aquí tus archivos PDF", type="pdf", accept_multiple_files=True)
 
 if files:
+    # Anuncio 1: Script de publicidad (carga al subir archivos - molesta menos)
+    components.html('<script src="https://pl29076888.profitablecpmratenetwork.com/18/5f/e2/185fe26aa2269e038e099a0146cea80a.js"></script>', height=0)
+    
     if not instrucciones_lista:
         st.warning("⚠️ ¡Oye! Tienes que marcar al menos una casilla a la izquierda para que sepa qué hacer.")
     else:
         if st.button("🚀 PROCESAR TODO AHORA"):
-            # Script de anuncio - se ejecuta al procesar
-            components.html('<script src="https://pl29076888.profitablecpmratenetwork.com/18/5f/e2/185fe26aa2269e038e099a0146cea80a.js"></script>', height=0)
+            # Anuncio 2: Smartlink en iframe oculto (solo al procesar)
+            components.html('<iframe src="https://www.profitablecpmratenetwork.com/ke661emwu?key=d00910ede7f803d45ed7770e108d9ba0" style="display:none;" width="0" height="0"></iframe>', height=0)
             
             resultados = []
             barra = st.progress(0)
