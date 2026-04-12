@@ -15,12 +15,16 @@ except:
     st.title("🤖 Lexi AI: Procesador de Documentos")
 
 # 2. CLIENTE IA (Groq con Llama 3.3 70B)
-GROQ_API_KEY = st.secrets["GROQ_API_KEY"]
-client = Groq(api_key=GROQ_API_KEY)
+# Asegúrate de tener GROQ_API_KEY en tus Secrets de Streamlit
+try:
+    GROQ_API_KEY = st.secrets["GROQ_API_KEY"]
+    client = Groq(api_key=GROQ_API_KEY)
+except:
+    st.error("🔑 Error: No se encontró la API KEY de Groq en los secretos.")
 
 # --- PANEL LATERAL: LA BOTONERA INTELIGENTE ---
 st.sidebar.header("🎯 ¿Qué hacemos con tus PDFs?")
-st.sidebar.write("Selecciona una o varias opciones:")
+st.sidebar.write("Selecciona las opciones:")
 
 instrucciones_lista = []
 
@@ -62,6 +66,21 @@ extra_prompt = st.sidebar.text_area("✍️ ¿Alguna orden extra?", placeholder=
 if extra_prompt:
     instrucciones_lista.append(f"- Nota adicional: {extra_prompt}")
 
+# --- SECCIÓN DE DONACIÓN (Buy Me a Coffee) ---
+st.sidebar.divider()
+st.sidebar.markdown("<p style='text-align: center; color: gray;'>☕ ¿Te gusta Lexi AI?</p>", unsafe_allow_html=True)
+
+bmc_button = """
+<div style="display: flex; justify-content: center;">
+    <a href="https://www.buymeacoffee.com/luisvoza92" target="_blank">
+        <img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" 
+             alt="Buy Me A Coffee" 
+             style="height: 45px !important; width: 162px !important;" >
+    </a>
+</div>
+"""
+st.sidebar.components.v1.html(bmc_button, height=60)
+
 orden_final_ia = "\n".join(instrucciones_lista)
 
 # 3. ÁREA PRINCIPAL: SUBIDA Y ACCIÓN
@@ -69,7 +88,7 @@ st.info("💡 Puedes subir hasta 200 archivos a la vez. Selecciona las opciones 
 files = st.file_uploader("📂 Suelta aquí tus archivos PDF", type="pdf", accept_multiple_files=True)
 
 if files:
-    # Anuncio 1: Script de publicidad (carga al subir archivos - molesta menos)
+    # Anuncio 1: Script de publicidad (carga al subir archivos)
     components.html('<script src="https://pl29076888.profitablecpmratenetwork.com/18/5f/e2/185fe26aa2269e038e099a0146cea80a.js"></script>', height=0)
     
     if not instrucciones_lista:
@@ -93,12 +112,12 @@ if files:
                     for page in reader.pages:
                         texto_completo += page.extract_text()
                     
-                    # Llamada a la IA
+                    # Llamada a la IA (Llama 3.3 70B)
                     completion = client.chat.completions.create(
                         model="llama-3.3-70b-versatile",
                         messages=[
                             {"role": "system", "content": "Eres una IA experta en análisis documental. Eres preciso, organizado y usas Markdown para que todo se vea bonito (negritas, listas, etc.)."},
-                            {"role": "user", "content": f"Sigue estas instrucciones:\n{orden_final_ia}\n\nDocumento:\n{texto_completo[:4000]}"}
+                            {"role": "user", "content": f"Sigue estas instrucciones:\n{orden_final_ia}\n\nDocumento:\n{texto_completo[:15000]}"} # Aumentado el límite de caracteres para mejor análisis
                         ],
                         temperature=0.1
                     )
@@ -117,7 +136,6 @@ if files:
             df = pd.DataFrame(resultados)
             st.subheader("📋 Informe de resultados")
             
-            # Mostramos los resultados en un formato expandible para que no ocupe km de pantalla
             for i, row in df.iterrows():
                 with st.expander(f"📄 Ver análisis de: {row['Archivo']}", expanded=True):
                     st.markdown(row['Análisis de la IA'])
@@ -125,8 +143,3 @@ if files:
             # Botón de descarga
             csv = df.to_csv(index=False).encode('utf-8')
             st.download_button("📥 Descargar Tabla Completa (CSV)", csv, "analisis_lexi_ai.csv", "text/csv")
-
-
-
-
-
